@@ -40,14 +40,14 @@ MageGuildWars ma za zadanie dostarczyć społeczności PBF wyspecjalizowane śro
 
 ### 1.3 Stos technologiczny
 
-| Warstwa | Technologia | Uwagi |
-|---------|-------------|-------|
-| Frontend | **Next.js** (React) | SSR/SSG, routing, UI |
-| Biblioteka UI | **Mantine** | Komponenty, theming, formularze, powiadomienia |
-| Backend | **NestJS** | REST API, logika biznesowa |
-| ORM | **TypeORM** | Zamiast Prismy — wymaganie serwera hostingowego |
-| Baza danych | **PostgreSQL** | Relacyjna baza danych |
-| Język | **TypeScript** | Pełny stack |
+| Warstwa       | Technologia         | Uwagi                                           |
+| ------------- | ------------------- | ----------------------------------------------- |
+| Frontend      | **Next.js** (React) | SSR/SSG, routing, UI                            |
+| Biblioteka UI | **Mantine**         | Komponenty, theming, formularze, powiadomienia  |
+| Backend       | **NestJS**          | REST API, logika biznesowa                      |
+| ORM           | **TypeORM**         | Zamiast Prismy — wymaganie serwera hostingowego |
+| Baza danych   | **PostgreSQL**      | Relacyjna baza danych                           |
+| Język         | **TypeScript**      | Pełny stack                                     |
 
 > **Uwaga:** Prisma nie jest wspierana przez serwer hostingowy — TypeORM jest wymaganym ORM dla tego projektu.
 
@@ -64,14 +64,14 @@ MageGuildWars ma za zadanie dostarczyć społeczności PBF wyspecjalizowane śro
 
 ### 2.1 Definicje ról
 
-| # | Rola | Opis |
-|---|------|------|
-| 1 | **Nowy użytkownik** | Nadawana automatycznie po rejestracji. Mocno ograniczona — tylko edycja profilu i założenie Karty Postaci. |
-| 2 | **Gracz** | Pełnoprawna rola z dostępem do wszystkich podstawowych funkcji potrzebnych do prowadzenia rozgrywki. |
-| 3 | **Mistrz Gry (GM)** | Rozszerzenie roli Gracza o funkcjonalności prowadzenia sesji: tworzenie wydarzeń fabularnych, zarządzanie NPC, kontrola wątków narracyjnych. |
-| 4 | **Moderator** | Odpowiada za moderację użytkowników oraz zarządzanie wątkami i lokacjami w systemie. |
-| 5 | **Administrator** | Pełna władza nad systemem — dostęp do wszystkich funkcji bez ograniczeń. |
-| 6 | **Zbanowany** | Dostęp wyłącznie do podglądu publicznych sekcji. Żadne akcje nie są możliwe. |
+| #   | Rola                | Opis                                                                                                                                         |
+| --- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Nowy użytkownik** | Nadawana automatycznie po rejestracji. Mocno ograniczona — tylko edycja profilu i założenie Karty Postaci.                                   |
+| 2   | **Gracz**           | Pełnoprawna rola z dostępem do wszystkich podstawowych funkcji potrzebnych do prowadzenia rozgrywki.                                         |
+| 3   | **Mistrz Gry (GM)** | Rozszerzenie roli Gracza o funkcjonalności prowadzenia sesji: tworzenie wydarzeń fabularnych, zarządzanie NPC, kontrola wątków narracyjnych. |
+| 4   | **Moderator**       | Odpowiada za moderację użytkowników oraz zarządzanie wątkami i lokacjami w systemie.                                                         |
+| 5   | **Administrator**   | Pełna władza nad systemem — dostęp do wszystkich funkcji bez ograniczeń.                                                                     |
+| 6   | **Zbanowany**       | Dostęp wyłącznie do podglądu publicznych sekcji. Żadne akcje nie są możliwe.                                                                 |
 
 ---
 
@@ -79,34 +79,34 @@ MageGuildWars ma za zadanie dostarczyć społeczności PBF wyspecjalizowane śro
 
 > Legenda: ✅ — dozwolone &nbsp;|&nbsp; ❌ — niedozwolone
 
-| Nazwa uprawnienia | Klucz uprawnienia | Nowy użytkownik | Gracz | Mistrz Gry | Moderator | Administrator | Zbanowany |
-|-------------------|-------------------|:-:|:-:|:-:|:-:|:-:|:-:|
-| **PROFIL** | | | | | | | |
-| Podgląd profilu | `profile.view` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Edycja danych podstawowych (własnych) | `profile.edit.basic.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Edycja powiadomień (własnych) | `profile.edit.notifications.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Zmiana hasła (własnego) | `profile.password.change.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Edycja danych podstawowych (cudzych) | `profile.edit.basic.other` | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
-| Edycja powiadomień (cudzych) | `profile.edit.notifications.other` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Reset hasła (cudzego) | `profile.password.reset.other` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **KARTA POSTACI** | | | | | | | |
-| Podgląd zatwierdzonej karty postaci (cudzej) | `character.view.other` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Podgląd własnej karty postaci (w tym draft) | `character.view.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Podgląd niezatwierdzonej karty postaci (cudzej) | `character.view.other.draft` | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
-| Utworzenie karty postaci | `character.create` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Edycja danych podstawowych (własnych) | `character.edit.basic.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Edycja historii postaci (własnej) | `character.edit.history.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Zarządzanie magią (własną) | `character.edit.magic.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Zarządzanie zaklęciami (własnymi) | `character.edit.spells.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Zarządzanie umiejętnościami (własnymi) | `character.edit.skills.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Przydział statystyk (własnych) | `character.edit.stats.own` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Zatwierdzenie karty postaci | `character.approve` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Edycja danych podstawowych (cudzych) | `character.edit.basic.other` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Edycja historii postaci (cudzej) | `character.edit.history.other` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Zarządzanie magią (cudzą) | `character.edit.magic.other` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Zarządzanie zaklęciami (cudzymi) | `character.edit.spells.other` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Zarządzanie umiejętnościami (cudzymi) | `character.edit.skills.other` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Edycja statystyk (cudzych) | `character.edit.stats.other` | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Nazwa uprawnienia                               | Klucz uprawnienia                  | Nowy użytkownik | Gracz | Mistrz Gry | Moderator | Administrator | Zbanowany |
+| ----------------------------------------------- | ---------------------------------- | :-------------: | :---: | :--------: | :-------: | :-----------: | :-------: |
+| **PROFIL**                                      |                                    |                 |       |            |           |               |           |
+| Podgląd profilu                                 | `profile.view`                     |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ✅     |
+| Edycja danych podstawowych (własnych)           | `profile.edit.basic.own`           |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Edycja powiadomień (własnych)                   | `profile.edit.notifications.own`   |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Zmiana hasła (własnego)                         | `profile.password.change.own`      |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Edycja danych podstawowych (cudzych)            | `profile.edit.basic.other`         |       ❌        |  ❌   |     ❌     |    ✅     |      ✅       |    ❌     |
+| Edycja powiadomień (cudzych)                    | `profile.edit.notifications.other` |       ❌        |  ❌   |     ❌     |    ❌     |      ✅       |    ❌     |
+| Reset hasła (cudzego)                           | `profile.password.reset.other`     |       ❌        |  ❌   |     ❌     |    ❌     |      ✅       |    ❌     |
+| **KARTA POSTACI**                               |                                    |                 |       |            |           |               |           |
+| Podgląd zatwierdzonej karty postaci (cudzej)    | `character.view.other`             |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ✅     |
+| Podgląd własnej karty postaci (w tym draft)     | `character.view.own`               |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ✅     |
+| Podgląd niezatwierdzonej karty postaci (cudzej) | `character.view.other.draft`       |       ❌        |  ❌   |     ❌     |    ✅     |      ✅       |    ❌     |
+| Utworzenie karty postaci                        | `character.create`                 |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Edycja danych podstawowych (własnych)           | `character.edit.basic.own`         |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Edycja historii postaci (własnej)               | `character.edit.history.own`       |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Zarządzanie magią (własną)                      | `character.edit.magic.own`         |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Zarządzanie zaklęciami (własnymi)               | `character.edit.spells.own`        |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Zarządzanie umiejętnościami (własnymi)          | `character.edit.skills.own`        |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Przydział statystyk (własnych)                  | `character.edit.stats.own`         |       ✅        |  ✅   |     ✅     |    ✅     |      ✅       |    ❌     |
+| Zatwierdzenie karty postaci                     | `character.approve`                |       ❌        |  ❌   |     ❌     |    ❌     |      ✅       |    ❌     |
+| Edycja danych podstawowych (cudzych)            | `character.edit.basic.other`       |       ❌        |  ❌   |     ❌     |    ❌     |      ✅       |    ❌     |
+| Edycja historii postaci (cudzej)                | `character.edit.history.other`     |       ❌        |  ❌   |     ❌     |    ❌     |      ✅       |    ❌     |
+| Zarządzanie magią (cudzą)                       | `character.edit.magic.other`       |       ❌        |  ❌   |     ❌     |    ❌     |      ✅       |    ❌     |
+| Zarządzanie zaklęciami (cudzymi)                | `character.edit.spells.other`      |       ❌        |  ❌   |     ❌     |    ❌     |      ✅       |    ❌     |
+| Zarządzanie umiejętnościami (cudzymi)           | `character.edit.skills.other`      |       ❌        |  ❌   |     ❌     |    ❌     |      ✅       |    ❌     |
+| Edycja statystyk (cudzych)                      | `character.edit.stats.other`       |       ❌        |  ❌   |     ❌     |    ❌     |      ✅       |    ❌     |
 
 ---
 
@@ -124,6 +124,7 @@ Klucz uprawnienia mówi **co** można zrobić i **na czym** — nigdy **kto** to
 ```
 
 Konwencja zakresu:
+
 - `.own` — akcja na własnym zasobie
 - `.other` — akcja na cudzym zasobie
 - `.other.draft` — akcja na cudzym zasobie w stanie roboczym (przed zatwierdzeniem)
@@ -141,6 +142,7 @@ granted        → true = dodane / false = odebrane
 ```
 
 Priorytet decyzji:
+
 1. `user_permissions.granted = true` → zawsze tak (override ponad rolę)
 2. `user_permissions.granted = false` → zawsze nie (nawet jeśli rola daje dostęp)
 3. brak wpisu → sprawdź uprawnienia roli
