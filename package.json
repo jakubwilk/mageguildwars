@@ -1,0 +1,36 @@
+{
+  "name": "mageguildwars",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "dev:web": "pnpm --filter @mageguildwars/web dev",
+    "dev:api": "pnpm --filter @mageguildwars/api dev",
+    "build": "pnpm -r run build",
+    "build:web": "pnpm --filter @mageguildwars/web build",
+    "build:api": "pnpm --filter @mageguildwars/api build",
+    "start:web": "pnpm --filter @mageguildwars/web start",
+    "start:api": "pnpm --filter @mageguildwars/api start:prod",
+    "lint": "pnpm -r run lint",
+    "lint:web": "pnpm --filter @mageguildwars/web lint",
+    "lint:api": "pnpm --filter @mageguildwars/api lint",
+    "lint:fix": "pnpm -r run lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .prettierignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .prettierignore",
+    "clean": "rm -rf apps/web/.next apps/api/dist node_modules apps/*/node_modules packages/*/node_modules"
+  },
+  "devDependencies": {
+    "@mageguildwars/prettier-config": "workspace:*",
+    "prettier": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@10.17.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}

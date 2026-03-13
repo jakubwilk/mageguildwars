@@ -1,0 +1,29 @@
+{
+  "name": "@mageguildwars/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@mageguildwars/prettier-config": "workspace:*",
+    "@mageguildwars/typescript-config": "workspace:*",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "eslint-config-prettier": "^10.0.0",
+    "typescript": "^5"
+  },
+  "prettier": "@mageguildwars/prettier-config"
+}
