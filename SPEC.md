@@ -2,6 +2,22 @@
 
 ---
 
+## Spis treści
+
+- [1. Wstęp](#1-wstęp)
+  - [1.1 Opis projektu](#11-opis-projektu)
+  - [1.2 Cel biznesowy](#12-cel-biznesowy)
+  - [1.3 Stos technologiczny](#13-stos-technologiczny)
+  - [1.4 Charakter aplikacji](#14-charakter-aplikacji)
+- [2. Role i uprawnienia użytkowników](#2-role-i-uprawnienia-użytkowników)
+  - [2.1 Definicje ról](#21-definicje-ról)
+  - [2.2 Macierz uprawnień](#22-macierz-uprawnień)
+  - [2.3 Model uprawnień — zasady projektowe](#23-model-uprawnień--zasady-projektowe)
+  - [2.4 Uwagi do ról](#24-uwagi-do-ról)
+- [TODO](#todo)
+
+---
+
 ## 1. Wstęp
 
 ### 1.1 Opis projektu
