@@ -18,7 +18,11 @@
   - [3.1 User](#31-user)
   - [3.2 Character](#32-character)
   - [3.3 Title](#33-title)
-  - [3.4 Encje do rozwinięcia](#34-encje-do-rozwinięcia)
+  - [3.4 Spell](#34-spell)
+  - [3.5 Skill](#35-skill)
+  - [3.6 Item](#36-item)
+  - [3.7 Requirement](#37-requirement)
+  - [3.8 Encje do rozwinięcia](#38-encje-do-rozwinięcia)
 - [TODO](#todo)
 
 ---
@@ -272,11 +276,14 @@ Encja reprezentująca **grywalną postać** przypisaną do konta użytkownika. J
 | `personality` | `text` | Opis osobowości i charakteru |
 | `trivia` | `text` | Dodatkowe fakty i ciekawostki o postaci |
 | `origin` | `string` | Miejsce lub kraina pochodzenia |
+| `level` | `integer` | Poziom postaci — wartość liczbowa bez górnego limitu, startuje od 1 |
 | `magic` | `any[]` | Tymczasowe — docelowo relacja M:M z encją `Magic` |
 | `spells` | `any[]` | Tymczasowe — docelowo relacja poprzez `Magic → Spell` |
 | `skills` | `any[]` | Tymczasowe — docelowo relacja M:M z encją `Skill` |
 | `items` | `any[]` | Tymczasowe — docelowo relacja M:M z encją `Item` |
 | `familiars` | `any[]` | Tymczasowe — docelowo relacja M:M z encją `Familiar` |
+| `professions` | `any[]` | Tymczasowe — docelowo relacja M:M z encją `Profession` |
+| `combat_styles` | `any[]` | Tymczasowe — docelowo relacja M:M z encją `CombatStyle` |
 | `created_at` | `timestamp` | Data utworzenia karty |
 | `updated_at` | `timestamp` | Data ostatniej modyfikacji |
 
@@ -325,7 +332,145 @@ Encja reprezentująca **tytuł** przyznawany postaci. Tytuł może być czysto k
 
 ---
 
-### 3.4 Encje do rozwinięcia
+### 3.4 Spell
+
+Encja reprezentująca **zaklęcie** przypisane do konkretnej magii. Zaklęcia mogą być predefiniowane przez system (publiczne) lub tworzone przez graczy (prywatne lub publiczne). Zawiera poziomy zaklęcia jako sub-model oraz wymagania do odblokowania.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `magic_id` | `FK → Magic` | Magia, do której należy zaklęcie |
+| `created_by` | `FK → Character \| null` | Twórca zaklęcia. Null dla zaklęć systemowych |
+| `is_public` | `boolean` | Czy zaklęcie jest dostępne dla wszystkich (true) czy tylko dla twórcy (false) |
+| `name` | `string` | Nazwa zaklęcia |
+| `description` | `text` | Główny opis działania zaklęcia |
+| `images` | `string[]` | Tablica URL-i obrazków przedstawiających zaklęcie |
+| `additional_info` | `text \| null` | Dodatkowe informacje i uwagi |
+| `created_at` | `timestamp` | Data utworzenia |
+| `updated_at` | `timestamp` | Data ostatniej modyfikacji |
+
+**Relacje:**
+- `magic` → `Magic` (N:1)
+- `created_by` → `Character` (N:1, nullable)
+- `levels` → `SpellLevel[]` (1:N) — poziomy zaklęcia
+- `requirements` → `Requirement[]` (1:N, gdzie `owner_type = spell`) — wymagania do odblokowania
+
+---
+
+#### 3.4.1 SpellLevel
+
+Sub-model reprezentujący **pojedynczy poziom zaklęcia**. Każde zaklęcie może mieć wiele poziomów — każdy z osobnym opisem i obrazkami.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `spell_id` | `FK → Spell` | Zaklęcie, do którego należy poziom |
+| `level_number` | `integer` | Numer poziomu (1, 2, 3...) |
+| `description` | `text` | Opis działania zaklęcia na tym poziomie |
+| `images` | `string[]` | Tablica URL-i obrazków dla tego poziomu |
+
+---
+
+### 3.5 Skill
+
+Encja reprezentująca **umiejętność** postaci. Podobnie jak zaklęcia, umiejętności mogą być predefiniowane przez system lub tworzone przez graczy. Zawiera poziomy jako sub-model oraz wymagania do odblokowania.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `created_by` | `FK → Character \| null` | Twórca umiejętności. Null dla umiejętności systemowych |
+| `is_public` | `boolean` | Czy umiejętność jest dostępna dla wszystkich (true) czy tylko dla twórcy (false) |
+| `name` | `string` | Nazwa umiejętności |
+| `description` | `text` | Opis umiejętności |
+| `images` | `string[]` | Tablica URL-i obrazków |
+| `required_level` | `integer \| null` | Minimalny poziom postaci wymagany do odblokowania |
+| `additional_info` | `text \| null` | Dodatkowe informacje i uwagi |
+| `created_at` | `timestamp` | Data utworzenia |
+| `updated_at` | `timestamp` | Data ostatniej modyfikacji |
+
+**Relacje:**
+- `created_by` → `Character` (N:1, nullable)
+- `levels` → `SkillLevel[]` (1:N) — poziomy umiejętności
+- `requirements` → `Requirement[]` (1:N, gdzie `owner_type = skill`) — wymagania do odblokowania
+- `characters` → `Character[]` (M:M)
+
+---
+
+#### 3.5.1 SkillLevel
+
+Sub-model reprezentujący **pojedynczy poziom umiejętności**. Analogiczny do `SpellLevel`.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `skill_id` | `FK → Skill` | Umiejętność, do której należy poziom |
+| `level_number` | `integer` | Numer poziomu (1, 2, 3...) |
+| `description` | `text` | Opis działania umiejętności na tym poziomie |
+| `images` | `string[]` | Tablica URL-i obrazków dla tego poziomu |
+
+---
+
+### 3.6 Item
+
+Encja reprezentująca **przedmiot** posiadany przez postać. Może być tworzony przez Admina/GM w panelu zarządzania lub przez gracza. Nie posiada poziomów (w przeciwieństwie do `Spell` i `Skill`).
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `created_by` | `FK → Character \| null` | Twórca przedmiotu. Null dla przedmiotów systemowych |
+| `is_public` | `boolean` | Czy przedmiot jest dostępny dla wszystkich (true) czy tylko dla twórcy (false) |
+| `name` | `string` | Nazwa przedmiotu |
+| `description` | `text` | Opis przedmiotu |
+| `images` | `string[]` | Tablica URL-i obrazków przedmiotu |
+| `weapon_strength` | `integer \| null` | Siła/ostrość broni w skali 1–10. Null jeśli przedmiot nie jest bronią. Walidacja zakresu po stronie aplikacji (`@Min(1) @Max(10)`) |
+| `additional_info` | `text \| null` | Dodatkowe informacje i uwagi |
+| `created_at` | `timestamp` | Data utworzenia |
+| `updated_at` | `timestamp` | Data ostatniej modyfikacji |
+
+**Relacje:**
+- `created_by` → `Character` (N:1, nullable)
+- `requirements` → `Requirement[]` (1:N, gdzie `item_id` jest wypełnione) — wymagania do użycia/posiadania
+- `characters` → `Character[]` (M:M)
+
+---
+
+### 3.7 Requirement
+
+Wspólna encja wymagań dla `Spell`, `Skill`, `Item` i docelowo `Magic`. Jeden rekord = jedno wymaganie. Właściciel wymagania wskazywany jest przez osobne nullable FK — podejście kompatybilne z Prismą i zapewniające pełne FK constraints po stronie PostgreSQL.
+
+> Dokładnie jedno z pól `spell_id` / `skill_id` / `item_id` / `magic_id` jest wypełnione — pozostałe są `null`.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `spell_id` | `FK → Spell \| null` | Wymaganie należy do zaklęcia |
+| `skill_id` | `FK → Skill \| null` | Wymaganie należy do umiejętności |
+| `item_id` | `FK → Item \| null` | Wymaganie należy do przedmiotu |
+| `magic_id` | `FK → Magic \| null` | Wymaganie należy do magii |
+| `required_level` | `integer \| null` | Minimalny poziom postaci |
+| `required_profession_id` | `FK → Profession \| null` | Wymagana profesja |
+| `required_combat_style_id` | `FK → CombatStyle \| null` | Wymagany styl walki |
+| `required_magic_id` | `FK → Magic \| null` | Wymagana magia |
+| `required_spell_id` | `FK → Spell \| null` | Wymagane zaklęcie |
+| `required_item_id` | `FK → Item \| null` | Wymagany przedmiot |
+| `required_stat_id` | `FK → Stat \| null` | Wymagana statystyka |
+| `required_stat_value` | `integer \| null` | Minimalna wartość wymaganej statystyki |
+
+**Przykłady:**
+
+| Właściciel | Wypełnione pole wymagania | Interpretacja |
+|------------|--------------------------|---------------|
+| `spell_id` | `required_level = 15` | Zaklęcie wymaga poziomu 15 |
+| `spell_id` | `required_stat_id + required_stat_value = 80` | Zaklęcie wymaga statystyki X ≥ 80 |
+| `skill_id` | `required_profession_id` | Umiejętność wymaga konkretnej profesji |
+| `skill_id` | `required_magic_id` | Umiejętność wymaga posiadania konkretnej magii |
+| `item_id` | `required_spell_id` | Przedmiot wymaga znajomości konkretnego zaklęcia |
+
+> Jeden rekord `Requirement` opisuje dokładnie jedno wymaganie. Wiele wymagań jednocześnie = wiele rekordów powiązanych z tym samym właścicielem.
+
+---
+
+### 3.8 Encje do rozwinięcia
 
 Poniższe encje zostaną szczegółowo opisane w kolejnych sekcjach specyfikacji. Na tym etapie definiujemy wyłącznie ich istnienie i powiązanie z `Character`.
 
@@ -333,10 +478,12 @@ Poniższe encje zostaną szczegółowo opisane w kolejnych sekcjach specyfikacji
 |-------|-----------|--------|
 | `Guild` | Character N:1 | Sekcja 4 — Gildie |
 | `Magic` | Character M:M | Sekcja 5 — System Magii |
-| `Spell` | Magic 1:N | Sekcja 5 — System Magii |
-| `Skill` | Character M:M | Sekcja 6 — Umiejętności |
-| `Item` | Character M:M | Sekcja 7 — Ekwipunek |
+| `Spell` | Magic 1:N | Sekcja 3.4 ✅ |
+| `Skill` | Character M:M | Sekcja 3.5 ✅ |
+| `Item` | Character M:M | Sekcja 3.6 ✅ |
 | `Familiar` | Character M:M | Sekcja 8 — Chowańce |
+| `Profession` | Character M:M | Sekcja 9 — Profesje |
+| `CombatStyle` | Character M:M | Sekcja 10 — Style walki |
 | `Role` | User N:1 | Sekcja 2 — Uprawnienia |
 | `Permission` | Role/Title M:M | Sekcja 2 — Uprawnienia |
 
@@ -353,3 +500,7 @@ Przynależność gracza do gildii (np. Fairy Tail, Grimoire Heart, Raven Tail) *
 - Wewnątrz gildii mogą istnieć **rangi** (np. szeregowy mag, zastępca, mistrz gildii), które kontrolują akcje w obrębie gildii (np. `guild.member.kick`, `guild.manage`), ale nie zmieniają globalnej roli systemowej użytkownika.
 
 > Szczegółowy model danych i uprawnienia gildyjne zostaną opisane w osobnej sekcji specyfikacji (Gildie).
+
+### Obrazki jako `string[]` — do weryfikacji przy projektowaniu bazy
+
+Pola `images: string[]` (na `Spell`, `SpellLevel`, `Skill`, `SkillLevel`) są obecnie przechowywane jako tablice tekstowe (PostgreSQL `text[]`). Do rozważenia przy projektowaniu bazy: czy warto wydzielić osobną tabelę `Image` z relacją, np. dla lepszego zarządzania plikami, metadanymi lub integracją z CDN/storage.
