@@ -21,8 +21,13 @@
   - [3.4 Spell](#34-spell)
   - [3.5 Skill](#35-skill)
   - [3.6 Item](#36-item)
-  - [3.7 Requirement](#37-requirement)
-  - [3.8 Encje do rozwinięcia](#38-encje-do-rozwinięcia)
+  - [3.7 Magic](#37-magic)
+    - [3.7.1 MagicLevel](#371-magiclevel)
+  - [3.8 Profession](#38-profession)
+    - [3.8.1 ProfessionLevel](#381-professionlevel)
+  - [3.9 Condition](#39-condition)
+  - [3.10 Effect](#310-effect)
+  - [3.11 Encje do rozwinięcia](#311-encje-do-rozwinięcia)
 - [TODO](#todo)
 
 ---
@@ -61,7 +66,7 @@ MageGuildWars ma za zadanie dostarczyć społeczności PBF wyspecjalizowane śro
 ### 1.4 Charakter aplikacji
 
 - **Typ:** CMS + forum RPG
-- **Model danych:** Relacyjny (TypeORM + PostgreSQL)
+- **Model danych:** Relacyjny (Prisma + PostgreSQL)
 - **Interakcja:** CRUD — tworzenie, odczytywanie, edytowanie i usuwanie postów, postaci, wątków, gildii i innych encji
 - **Użytkownicy:** Gracze, Mistrzowie Gry (GM), Moderatorzy, Administratorzy
 
@@ -153,9 +158,9 @@ Tytuł to **nazwany, kompozytowalny zestaw uprawnień** — działa jak mini-rol
 **Schemat danych:**
 
 ```
-titles                     title_permissions (M:M)    user_titles (M:M)
-──────────────────         ───────────────────────    ──────────────────
-id                         title_id (FK)              user_id (FK)
+titles                     title_permissions (M:M)    character_titles (M:M)
+──────────────────         ───────────────────────    ──────────────────────
+id                         title_id (FK)              character_id (FK)
 name: 'Mag S-Klasy'        permission_id (FK)         title_id (FK)
 description                                           assigned_at
                                                       assigned_by
@@ -277,6 +282,8 @@ Encja reprezentująca **grywalną postać** przypisaną do konta użytkownika. J
 | `trivia` | `text` | Dodatkowe fakty i ciekawostki o postaci |
 | `origin` | `string` | Miejsce lub kraina pochodzenia |
 | `level` | `integer` | Poziom postaci — wartość liczbowa bez górnego limitu, startuje od 1 |
+| `pd_total` | `integer` | Łączne PD zdobyte przez postać (nigdy nie maleje) |
+| `pd_available` | `integer` | PD dostępne do wydania (`pd_total` minus wydane) |
 | `magic` | `any[]` | Tymczasowe — docelowo relacja M:M z encją `Magic` |
 | `spells` | `any[]` | Tymczasowe — docelowo relacja poprzez `Magic → Spell` |
 | `skills` | `any[]` | Tymczasowe — docelowo relacja M:M z encją `Skill` |
@@ -334,26 +341,28 @@ Encja reprezentująca **tytuł** przyznawany postaci. Tytuł może być czysto k
 
 ### 3.4 Spell
 
-Encja reprezentująca **zaklęcie** przypisane do konkretnej magii. Zaklęcia mogą być predefiniowane przez system (publiczne) lub tworzone przez graczy (prywatne lub publiczne). Zawiera poziomy zaklęcia jako sub-model oraz wymagania do odblokowania.
+Encja reprezentująca **zaklęcie** przypisane do konkretnego poziomu magii. Zaklęcia mogą być predefiniowane przez system (publiczne) lub tworzone przez graczy (prywatne lub publiczne). Zawiera poziomy zaklęcia jako sub-model oraz wymagania do odblokowania.
 
 | Pole | Typ | Opis |
 |------|-----|------|
 | `id` | `uuid` | Klucz główny |
-| `magic_id` | `FK → Magic` | Magia, do której należy zaklęcie |
+| `magic_level_id` | `FK → MagicLevel` | Poziom magii, do którego należy zaklęcie. Przez poziom → magia |
 | `created_by` | `FK → Character \| null` | Twórca zaklęcia. Null dla zaklęć systemowych |
 | `is_public` | `boolean` | Czy zaklęcie jest dostępne dla wszystkich (true) czy tylko dla twórcy (false) |
 | `name` | `string` | Nazwa zaklęcia |
 | `description` | `text` | Główny opis działania zaklęcia |
 | `images` | `string[]` | Tablica URL-i obrazków przedstawiających zaklęcie |
+| `pd_cost` | `integer` | Koszt w PD zakupu zaklęcia |
 | `additional_info` | `text \| null` | Dodatkowe informacje i uwagi |
 | `created_at` | `timestamp` | Data utworzenia |
 | `updated_at` | `timestamp` | Data ostatniej modyfikacji |
 
 **Relacje:**
-- `magic` → `Magic` (N:1)
+- `magic_level` → `MagicLevel` (N:1)
 - `created_by` → `Character` (N:1, nullable)
 - `levels` → `SpellLevel[]` (1:N) — poziomy zaklęcia
-- `requirements` → `Requirement[]` (1:N, gdzie `owner_type = spell`) — wymagania do odblokowania
+- `conditions` → `Condition[]` (1:N, gdzie `owner_spell_id` jest wypełnione) — wymagania do odblokowania
+- `effects` → `Effect[]` (1:N, gdzie `owner_spell_id` jest wypełnione) — bonusy nadawane przez zaklęcie
 
 ---
 
@@ -366,8 +375,13 @@ Sub-model reprezentujący **pojedynczy poziom zaklęcia**. Każde zaklęcie moż
 | `id` | `uuid` | Klucz główny |
 | `spell_id` | `FK → Spell` | Zaklęcie, do którego należy poziom |
 | `level_number` | `integer` | Numer poziomu (1, 2, 3...) |
+| `pd_cost` | `integer` | Koszt w PD awansu na ten poziom zaklęcia |
 | `description` | `text` | Opis działania zaklęcia na tym poziomie |
 | `images` | `string[]` | Tablica URL-i obrazków dla tego poziomu |
+
+**Relacje:**
+- `spell` → `Spell` (N:1)
+- `conditions` → `Condition[]` (1:N, gdzie `owner_spell_level_id` jest wypełnione) — wymagania do odblokowania tego poziomu zaklęcia
 
 ---
 
@@ -383,7 +397,8 @@ Encja reprezentująca **umiejętność** postaci. Podobnie jak zaklęcia, umiej�
 | `name` | `string` | Nazwa umiejętności |
 | `description` | `text` | Opis umiejętności |
 | `images` | `string[]` | Tablica URL-i obrazków |
-| `required_level` | `integer \| null` | Minimalny poziom postaci wymagany do odblokowania |
+| `pd_cost` | `integer` | Koszt w PD nauki umiejętności |
+| `required_level` | `integer \| null` | Minimalny poziom postaci — skrót dla najczęstszego warunku. Docelowo obsługiwany przez `Condition` z `attribute_type = character.level` |
 | `additional_info` | `text \| null` | Dodatkowe informacje i uwagi |
 | `created_at` | `timestamp` | Data utworzenia |
 | `updated_at` | `timestamp` | Data ostatniej modyfikacji |
@@ -391,7 +406,8 @@ Encja reprezentująca **umiejętność** postaci. Podobnie jak zaklęcia, umiej�
 **Relacje:**
 - `created_by` → `Character` (N:1, nullable)
 - `levels` → `SkillLevel[]` (1:N) — poziomy umiejętności
-- `requirements` → `Requirement[]` (1:N, gdzie `owner_type = skill`) — wymagania do odblokowania
+- `conditions` → `Condition[]` (1:N, gdzie `owner_skill_id` jest wypełnione) — wymagania do odblokowania
+- `effects` → `Effect[]` (1:N, gdzie `owner_skill_id` jest wypełnione) — bonusy nadawane przez umiejętność
 - `characters` → `Character[]` (M:M)
 
 ---
@@ -405,8 +421,13 @@ Sub-model reprezentujący **pojedynczy poziom umiejętności**. Analogiczny do `
 | `id` | `uuid` | Klucz główny |
 | `skill_id` | `FK → Skill` | Umiejętność, do której należy poziom |
 | `level_number` | `integer` | Numer poziomu (1, 2, 3...) |
+| `pd_cost` | `integer` | Koszt w PD awansu na ten poziom umiejętności |
 | `description` | `text` | Opis działania umiejętności na tym poziomie |
 | `images` | `string[]` | Tablica URL-i obrazków dla tego poziomu |
+
+**Relacje:**
+- `skill` → `Skill` (N:1)
+- `conditions` → `Condition[]` (1:N, gdzie `owner_skill_level_id` jest wypełnione) — wymagania do odblokowania tego poziomu umiejętności
 
 ---
 
@@ -422,6 +443,7 @@ Encja reprezentująca **przedmiot** posiadany przez postać. Może być tworzony
 | `name` | `string` | Nazwa przedmiotu |
 | `description` | `text` | Opis przedmiotu |
 | `images` | `string[]` | Tablica URL-i obrazków przedmiotu |
+| `pd_cost` | `integer` | Koszt w PD zakupu przedmiotu |
 | `weapon_strength` | `integer \| null` | Siła/ostrość broni w skali 1–10. Null jeśli przedmiot nie jest bronią. Walidacja zakresu po stronie aplikacji (`@Min(1) @Max(10)`) |
 | `additional_info` | `text \| null` | Dodatkowe informacje i uwagi |
 | `created_at` | `timestamp` | Data utworzenia |
@@ -429,60 +451,195 @@ Encja reprezentująca **przedmiot** posiadany przez postać. Może być tworzony
 
 **Relacje:**
 - `created_by` → `Character` (N:1, nullable)
-- `requirements` → `Requirement[]` (1:N, gdzie `item_id` jest wypełnione) — wymagania do użycia/posiadania
+- `conditions` → `Condition[]` (1:N, gdzie `owner_item_id` jest wypełnione) — wymagania do użycia/posiadania
+- `effects` → `Effect[]` (1:N, gdzie `owner_item_id` jest wypełnione) — bonusy nadawane przez przedmiot
 - `characters` → `Character[]` (M:M)
 
 ---
 
-### 3.7 Requirement
+### 3.7 Magic
 
-Wspólna encja wymagań dla `Spell`, `Skill`, `Item` i docelowo `Magic`. Jeden rekord = jedno wymaganie. Właściciel wymagania wskazywany jest przez osobne nullable FK — podejście kompatybilne z Prismą i zapewniające pełne FK constraints po stronie PostgreSQL.
-
-> Dokładnie jedno z pól `spell_id` / `skill_id` / `item_id` / `magic_id` jest wypełnione — pozostałe są `null`.
+Encja reprezentująca **typ magii** postaci. Magia posiada poziomy jako sub-model — każdy poziom zawiera własny opis, wymagania oraz listę przynależnych zaklęć. Może być predefiniowana przez system lub tworzona przez gracza. Magia sama w sobie nie nadaje bonusów — może być natomiast bonusem w innych encjach (np. efekt `magic.unlock`).
 
 | Pole | Typ | Opis |
 |------|-----|------|
 | `id` | `uuid` | Klucz główny |
-| `spell_id` | `FK → Spell \| null` | Wymaganie należy do zaklęcia |
-| `skill_id` | `FK → Skill \| null` | Wymaganie należy do umiejętności |
-| `item_id` | `FK → Item \| null` | Wymaganie należy do przedmiotu |
-| `magic_id` | `FK → Magic \| null` | Wymaganie należy do magii |
-| `required_level` | `integer \| null` | Minimalny poziom postaci |
-| `required_profession_id` | `FK → Profession \| null` | Wymagana profesja |
-| `required_combat_style_id` | `FK → CombatStyle \| null` | Wymagany styl walki |
-| `required_magic_id` | `FK → Magic \| null` | Wymagana magia |
-| `required_spell_id` | `FK → Spell \| null` | Wymagane zaklęcie |
-| `required_item_id` | `FK → Item \| null` | Wymagany przedmiot |
-| `required_stat_id` | `FK → Stat \| null` | Wymagana statystyka |
-| `required_stat_value` | `integer \| null` | Minimalna wartość wymaganej statystyki |
+| `created_by` | `FK → Character \| null` | Twórca magii. Null dla magii systemowych |
+| `is_public` | `boolean` | Czy magia jest dostępna dla wszystkich (true) czy tylko dla twórcy (false) |
+| `name` | `string` | Nazwa magii |
+| `description` | `text` | Główny opis magii |
+| `images` | `string[]` | Tablica URL-i obrazków |
+| `pd_cost` | `integer` | Koszt w PD nauki magii |
+| `required_level` | `integer \| null` | Minimalny poziom postaci wymagany do nauki magii |
+| `additional_info` | `text \| null` | Dodatkowe informacje i uwagi |
+| `created_at` | `timestamp` | Data utworzenia |
+| `updated_at` | `timestamp` | Data ostatniej modyfikacji |
 
-**Przykłady:**
-
-| Właściciel | Wypełnione pole wymagania | Interpretacja |
-|------------|--------------------------|---------------|
-| `spell_id` | `required_level = 15` | Zaklęcie wymaga poziomu 15 |
-| `spell_id` | `required_stat_id + required_stat_value = 80` | Zaklęcie wymaga statystyki X ≥ 80 |
-| `skill_id` | `required_profession_id` | Umiejętność wymaga konkretnej profesji |
-| `skill_id` | `required_magic_id` | Umiejętność wymaga posiadania konkretnej magii |
-| `item_id` | `required_spell_id` | Przedmiot wymaga znajomości konkretnego zaklęcia |
-
-> Jeden rekord `Requirement` opisuje dokładnie jedno wymaganie. Wiele wymagań jednocześnie = wiele rekordów powiązanych z tym samym właścicielem.
+**Relacje:**
+- `created_by` → `Character` (N:1, nullable)
+- `levels` → `MagicLevel[]` (1:N) — poziomy magii
+- `conditions` → `Condition[]` (1:N, gdzie `owner_magic_id` jest wypełnione) — wymagania do nauki magii
+- `characters` → `Character[]` (M:M)
 
 ---
 
-### 3.8 Encje do rozwinięcia
+#### 3.7.1 MagicLevel
+
+Sub-model reprezentujący **pojedynczy poziom magii**. Każdy poziom zawiera opis, wymagania (poprzedni poziom magii, poziom postaci) oraz listę zaklęć dostępnych na tym poziomie.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `magic_id` | `FK → Magic` | Magia, do której należy poziom |
+| `level_number` | `integer` | Numer poziomu (1, 2, 3...) |
+| `pd_cost` | `integer` | Koszt w PD awansu na ten poziom magii |
+| `description` | `text` | Opis poziomu magii |
+| `previous_level_id` | `FK → MagicLevel \| null` | Wymagany poprzedni poziom tej samej magii. Null dla poziomu 1 |
+
+**Relacje:**
+- `spells` → `Spell[]` (1:N) — zaklęcia przypisane do tego poziomu magii (przez `Spell.magic_level_id`)
+- `conditions` → `Condition[]` (1:N, gdzie `owner_magic_level_id` jest wypełnione) — wymagania dodatkowe poza poprzednim poziomem
+
+---
+
+### 3.8 Profession
+
+Encja reprezentująca **profesję** postaci — określa specjalizację, odblokowuje dostęp do umiejętności i nadaje bonusy. Tworzona wyłącznie przez Administratora. Postać może mieć wiele profesji (M:M). Profesja posiada poziomy jako sub-model, każdy z własnymi wymaganiami, bonusami i przypisanymi umiejętnościami.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `name` | `string` | Nazwa profesji |
+| `description` | `text` | Główny opis profesji |
+| `images` | `string[]` | Tablica URL-i obrazków |
+| `pd_cost` | `integer` | Koszt w PD wyboru profesji |
+| `required_level` | `integer \| null` | Minimalny poziom postaci wymagany do wyboru profesji |
+| `additional_info` | `text \| null` | Dodatkowe informacje i uwagi |
+| `created_at` | `timestamp` | Data utworzenia |
+| `updated_at` | `timestamp` | Data ostatniej modyfikacji |
+
+**Relacje:**
+- `levels` → `ProfessionLevel[]` (1:N) — poziomy profesji
+- `conditions` → `Condition[]` (1:N, gdzie `owner_profession_id` jest wypełnione) — wymagania do odblokowania profesji
+- `effects` → `Effect[]` (1:N, gdzie `owner_profession_id` jest wypełnione) — bonusy ogólne profesji (niezależne od poziomów)
+- `characters` → `Character[]` (M:M)
+
+---
+
+#### 3.8.1 ProfessionLevel
+
+Sub-model reprezentujący **pojedynczy poziom profesji**. Każdy poziom ma własny opis, wymagania (w tym poprzedni poziom), bonusy oraz listę odblokowanych umiejętności.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `profession_id` | `FK → Profession` | Profesja, do której należy poziom |
+| `level_number` | `integer` | Numer poziomu (1, 2, 3...) |
+| `pd_cost` | `integer` | Koszt w PD awansu na ten poziom profesji |
+| `description` | `text` | Opis poziomu profesji |
+| `previous_level_id` | `FK → ProfessionLevel \| null` | Wymagany poprzedni poziom tej samej profesji. Null dla poziomu 1 |
+
+**Relacje:**
+- `conditions` → `Condition[]` (1:N, gdzie `owner_profession_level_id` jest wypełnione) — wymagania dodatkowe poza poprzednim poziomem
+- `effects` → `Effect[]` (1:N, gdzie `owner_profession_level_id` jest wypełnione) — bonusy nadawane przez ten poziom
+- `skills` → `Skill[]` (M:M) — umiejętności odblokowane na tym poziomie profesji
+
+---
+
+### 3.9 Condition
+
+Elastyczny model wymagań zastępujący sztywny `Requirement`. Jeden rekord = jedna reguła warunkowa. Właściciel wskazywany przez nullable FK. Operator i wartość zależą od wybranego `attribute_type`.
+
+> Dokładnie jedno z pól `owner_*` jest wypełnione — pozostałe są `null`.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `owner_spell_id` | `FK → Spell \| null` | Wymaganie należy do zaklęcia |
+| `owner_spell_level_id` | `FK → SpellLevel \| null` | Wymaganie należy do poziomu zaklęcia |
+| `owner_skill_id` | `FK → Skill \| null` | Wymaganie należy do umiejętności |
+| `owner_skill_level_id` | `FK → SkillLevel \| null` | Wymaganie należy do poziomu umiejętności |
+| `owner_item_id` | `FK → Item \| null` | Wymaganie należy do przedmiotu |
+| `owner_magic_id` | `FK → Magic \| null` | Wymaganie należy do magii |
+| `owner_magic_level_id` | `FK → MagicLevel \| null` | Wymaganie należy do poziomu magii |
+| `owner_profession_id` | `FK → Profession \| null` | Wymaganie należy do profesji |
+| `owner_profession_level_id` | `FK → ProfessionLevel \| null` | Wymaganie należy do poziomu profesji |
+| `attribute_type` | `enum` | Typ atrybutu — patrz tabela poniżej |
+| `attribute_label` | `string \| null` | Własna nazwa atrybutu (tylko dla `custom`) |
+| `operator` | `enum: gte \| lte \| has \| not_has` | Operator porównania |
+| `value_number` | `integer \| null` | Wartość liczbowa (np. wymagany poziom) |
+| `value_ref_id` | `uuid \| null` | Referencja do encji (magia, zaklęcie, umiejętność, itp.) |
+| `value_custom` | `string \| null` | Wartość tekstowa dla warunku własnego |
+
+**Predefiniowane wartości `attribute_type`:**
+
+| Wartość | Opis | Operator | Wartość |
+|---------|------|----------|---------|
+| `character.level` | Poziom postaci | `gte` / `lte` | `value_number` |
+| `character.magic` | Posiada magię | `has` / `not_has` | `value_ref_id → Magic` |
+| `character.spell` | Posiada zaklęcie | `has` / `not_has` | `value_ref_id → Spell` |
+| `character.skill` | Posiada umiejętność | `has` / `not_has` | `value_ref_id → Skill` |
+| `character.item` | Posiada przedmiot | `has` / `not_has` | `value_ref_id → Item` |
+| `character.title` | Posiada tytuł | `has` / `not_has` | `value_ref_id → Title` |
+| `character.profession` | Posiada profesję | `has` / `not_has` | `value_ref_id → Profession` |
+| `character.pd` | Ilość dostępnych PD | `gte` / `lte` | `value_number` |
+| `custom` | Własny warunek | `has` / `not_has` | `value_custom` |
+
+**Uwaga projektowa — UI Rule Builder:**
+Formularz wymagań działa jako dynamiczna lista reguł (wzorzec Rule Builder). Każdy wiersz to jeden rekord `Condition`. Bez grupowania AND/OR — prosta lista warunków, które wszystkie muszą być spełnione. Po wyborze `attribute_type` pole wartości zmienia się dynamicznie (liczba / dropdown encji / tekst własny).
+
+---
+
+### 3.10 Effect
+
+Elastyczny model bonusów i efektów nadawanych przez encje gry (profesje, poziomy profesji, zaklęcia, umiejętności, przedmioty). Jeden rekord = jeden efekt. Analogiczna struktura właściciela jak w `Condition`. Magia i jej poziomy nie nadają bonusów — mogą być natomiast bonusem docelowym (np. `magic.unlock`).
+
+> Dokładnie jedno z pól `owner_*` jest wypełnione — pozostałe są `null`.
+
+| Pole | Typ | Opis |
+|------|-----|------|
+| `id` | `uuid` | Klucz główny |
+| `owner_spell_id` | `FK → Spell \| null` | Efekt należy do zaklęcia |
+| `owner_spell_level_id` | `FK → SpellLevel \| null` | Efekt należy do poziomu zaklęcia |
+| `owner_skill_id` | `FK → Skill \| null` | Efekt należy do umiejętności |
+| `owner_skill_level_id` | `FK → SkillLevel \| null` | Efekt należy do poziomu umiejętności |
+| `owner_item_id` | `FK → Item \| null` | Efekt należy do przedmiotu |
+| `owner_profession_id` | `FK → Profession \| null` | Efekt należy do profesji |
+| `owner_profession_level_id` | `FK → ProfessionLevel \| null` | Efekt należy do poziomu profesji |
+| `attribute_type` | `enum` | Typ efektu — patrz tabela poniżej |
+| `attribute_label` | `string \| null` | Własna nazwa efektu (tylko dla `custom`) |
+| `operator` | `enum: add \| subtract \| multiply \| percent \| unlock` | Operator efektu |
+| `value_number` | `integer \| null` | Wartość liczbowa (np. +10 do statystyki) |
+| `value_ref_id` | `uuid \| null` | Referencja do encji (np. odblokowana umiejętność, magia) |
+| `value_custom` | `string \| null` | Opis własnego efektu |
+
+**Predefiniowane wartości `attribute_type`:**
+
+| Wartość | Opis | Operator | Wartość |
+|---------|------|----------|---------|
+| `stat` | Bonus do statystyki | `add` / `subtract` / `multiply` / `percent` | `value_number` + nazwa statu w `attribute_label` |
+| `skill.free` | Darmowa umiejętność | `unlock` | `value_ref_id → Skill` |
+| `magic.unlock` | Odblokowanie magii | `unlock` | `value_ref_id → Magic` |
+| `pd.discount` | Zniżka na koszt PD | `subtract` / `percent` | `value_number` |
+| `custom` | Własny efekt | dowolny | `value_custom` |
+
+---
+
+### 3.11 Encje do rozwinięcia
 
 Poniższe encje zostaną szczegółowo opisane w kolejnych sekcjach specyfikacji. Na tym etapie definiujemy wyłącznie ich istnienie i powiązanie z `Character`.
 
 | Encja | Powiązanie | Sekcja |
 |-------|-----------|--------|
 | `Guild` | Character N:1 | Sekcja 4 — Gildie |
-| `Magic` | Character M:M | Sekcja 5 — System Magii |
-| `Spell` | Magic 1:N | Sekcja 3.4 ✅ |
+| `Magic` | Character M:M | Sekcja 3.7 ✅ |
+| `Spell` | MagicLevel 1:N | Sekcja 3.4 ✅ |
 | `Skill` | Character M:M | Sekcja 3.5 ✅ |
 | `Item` | Character M:M | Sekcja 3.6 ✅ |
+| `Condition` | Spell/Skill/Item/Magic/Profession | Sekcja 3.9 ✅ |
+| `Effect` | Spell/Skill/Item/Profession | Sekcja 3.10 ✅ |
 | `Familiar` | Character M:M | Sekcja 8 — Chowańce |
-| `Profession` | Character M:M | Sekcja 9 — Profesje |
+| `Profession` | Character M:M | Sekcja 3.8 ✅ |
 | `CombatStyle` | Character M:M | Sekcja 10 — Style walki |
 | `Role` | User N:1 | Sekcja 2 — Uprawnienia |
 | `Permission` | Role/Title M:M | Sekcja 2 — Uprawnienia |
@@ -503,4 +660,4 @@ Przynależność gracza do gildii (np. Fairy Tail, Grimoire Heart, Raven Tail) *
 
 ### Obrazki jako `string[]` — do weryfikacji przy projektowaniu bazy
 
-Pola `images: string[]` (na `Spell`, `SpellLevel`, `Skill`, `SkillLevel`) są obecnie przechowywane jako tablice tekstowe (PostgreSQL `text[]`). Do rozważenia przy projektowaniu bazy: czy warto wydzielić osobną tabelę `Image` z relacją, np. dla lepszego zarządzania plikami, metadanymi lub integracją z CDN/storage.
+Pola `images: string[]` (na `Spell`, `SpellLevel`, `Skill`, `SkillLevel`, `Magic`, `MagicLevel`, `Profession`, `Item`) są obecnie przechowywane jako tablice tekstowe (PostgreSQL `text[]`). Do rozważenia przy projektowaniu bazy: czy warto wydzielić osobną tabelę `Image` z relacją, np. dla lepszego zarządzania plikami, metadanymi lub integracją z CDN/storage.
